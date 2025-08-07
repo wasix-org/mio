@@ -6,7 +6,7 @@ use mio::net::UdpSocket;
 use mio::{Events, Interest, Poll, Registry, Token};
 use std::net::{self, IpAddr, SocketAddr};
 #[cfg(unix)]
-use std::os::unix::io::{AsRawFd, FromRawFd, IntoRawFd};
+use std::os::fd::{AsRawFd, FromRawFd, IntoRawFd};
 use std::str;
 use std::sync::{Arc, Barrier};
 use std::thread;
@@ -254,6 +254,10 @@ fn get_multicast_ttl_v4_without_previous_set() {
 }
 
 #[test]
+#[cfg_attr(
+    target_os = "hurd",
+    ignore = "Multicast loop v6 isn't supported on GNU/Hurd"
+)]
 fn set_get_multicast_loop_v6() {
     let socket1 = UdpSocket::bind(any_local_ipv6_address()).unwrap();
 
@@ -267,6 +271,10 @@ fn set_get_multicast_loop_v6() {
 }
 
 #[test]
+#[cfg_attr(
+    target_os = "hurd",
+    ignore = "Multicast loop v6 isn't supported on GNU/Hurd"
+)]
 fn get_multicast_loop_v6_without_previous_set() {
     let socket1 = UdpSocket::bind(any_local_ipv6_address()).unwrap();
 
@@ -553,7 +561,7 @@ fn unconnected_udp_socket_connected_methods() {
     );
 
     // Socket is unconnected, but we're using an connected method.
-    if cfg!(not(target_os = "windows")) {
+    if cfg!(not(any(target_os = "hurd", target_os = "windows"))) {
         assert_error(socket1.send(DATA1), "address required");
     }
     if cfg!(target_os = "windows") {
@@ -616,12 +624,24 @@ fn connected_udp_socket_unconnected_methods() {
     );
 
     // Can't use `send_to`.
-    // Linux (and Android) and Windows actually allow `send_to` even if the
+    // Linux (and Android) and GNU/Hurd Windows actually allow `send_to` even if the
     // socket is connected.
-    #[cfg(not(any(target_os = "android", target_os = "linux", target_os = "wasi", target_os = "windows")))]
+    #[cfg(not(any(
+        target_os = "android",
+        target_os = "hurd",
+        target_os = "linux",
+        target_os = "wasi",
+        target_os = "windows"
+    )))]
     assert_error(socket1.send_to(DATA1, address2), "already connected");
     // Even if the address is the same.
-    #[cfg(not(any(target_os = "android", target_os = "linux", target_os = "wasi", target_os = "windows")))]
+    #[cfg(not(any(
+        target_os = "android",
+        target_os = "hurd",
+        target_os = "linux",
+        target_os = "wasi",
+        target_os = "windows"
+    )))]
     assert_error(socket1.send_to(DATA1, address3), "already connected");
 
     checked_write!(socket2.send_to(DATA2, address3));

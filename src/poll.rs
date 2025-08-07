@@ -1,7 +1,21 @@
-#[cfg(all(unix, not(mio_unsupported_force_poll_poll), not(target_os = "vita")))]
-use std::os::unix::io::{AsRawFd, RawFd};
+#[cfg(all(
+    unix,
+    not(mio_unsupported_force_poll_poll),
+    not(any(
+        target_os = "aix",
+        target_os = "espidf",
+        target_os = "fuchsia",
+        target_os = "haiku",
+        target_os = "hermit",
+        target_os = "hurd",
+        target_os = "nto",
+        target_os = "solaris",
+        target_os = "vita"
+    )),
+))]
+use std::os::fd::{AsRawFd, RawFd};
 #[cfg(all(debug_assertions, not(target_os = "wasi")))]
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::AtomicBool;
 #[cfg(all(debug_assertions, not(target_os = "wasi")))]
 use std::sync::Arc;
 use std::time::Duration;
@@ -423,7 +437,21 @@ impl Poll {
     }
 }
 
-#[cfg(all(unix, not(mio_unsupported_force_poll_poll), not(target_os = "vita")))]
+#[cfg(all(
+    unix,
+    not(mio_unsupported_force_poll_poll),
+    not(any(
+        target_os = "aix",
+        target_os = "espidf",
+        target_os = "fuchsia",
+        target_os = "haiku",
+        target_os = "hermit",
+        target_os = "hurd",
+        target_os = "nto",
+        target_os = "solaris",
+        target_os = "vita"
+    )),
+))]
 impl AsRawFd for Poll {
     fn as_raw_fd(&self) -> RawFd {
         self.registry.as_raw_fd()
@@ -694,7 +722,9 @@ impl Registry {
     pub fn register_waker(&self) {
         #[cfg(all(debug_assertions, not(target_os = "wasi")))]
         assert!(
-            !self.has_waker.swap(true, std::sync::atomic::Ordering::AcqRel),
+            !self
+                .has_waker
+                .swap(true, std::sync::atomic::Ordering::AcqRel),
             "Only a single `Waker` can be active per `Poll` instance"
         );
     }
@@ -713,7 +743,21 @@ impl fmt::Debug for Registry {
     }
 }
 
-#[cfg(all(unix, not(mio_unsupported_force_poll_poll), not(target_os = "vita")))]
+#[cfg(all(
+    unix,
+    not(mio_unsupported_force_poll_poll),
+    not(any(
+        target_os = "aix",
+        target_os = "espidf",
+        target_os = "haiku",
+        target_os = "fuchsia",
+        target_os = "hermit",
+        target_os = "hurd",
+        target_os = "nto",
+        target_os = "solaris",
+        target_os = "vita"
+    )),
+))]
 impl AsRawFd for Registry {
     fn as_raw_fd(&self) -> RawFd {
         self.selector.as_raw_fd()
@@ -724,7 +768,14 @@ cfg_os_poll! {
     #[cfg(all(
         unix,
         not(mio_unsupported_force_poll_poll),
-        not(target_os = "vita"),
+        not(any(
+            target_os = "espidf",
+            target_os = "hermit",
+            target_os = "hurd",
+            target_os = "nto",
+            target_os = "solaris",
+            target_os = "vita"
+        )),
     ))]
     #[test]
     pub fn as_raw_fd() {

@@ -205,12 +205,8 @@ fn read() {
         for event in &events {
             assert_eq!(event.token(), Token(1));
             let mut buf = [0; 1024];
-            loop {
-                if let Ok(amt) = data.socket.read(&mut buf) {
-                    data.amt += amt;
-                } else {
-                    break;
-                }
+            while let Ok(amt) = data.socket.read(&mut buf) {
+                data.amt += amt;
                 if data.amt >= N {
                     data.shutdown = true;
                     break;
@@ -270,12 +266,8 @@ fn peek() {
                 Err(err) => panic!("unexpected error: {}", err),
             }
 
-            loop {
-                if let Ok(amt) = data.socket.read(&mut buf) {
-                    data.amt += amt;
-                } else {
-                    break;
-                }
+            while let Ok(amt) = data.socket.read(&mut buf) {
+                data.amt += amt;
                 if data.amt >= N {
                     data.shutdown = true;
                     break;
@@ -329,12 +321,8 @@ fn write() {
         for event in &events {
             assert_eq!(event.token(), Token(1));
             let buf = [0; 1024];
-            loop {
-                if let Ok(amt) = data.socket.write(&buf) {
-                    data.amt += amt;
-                } else {
-                    break;
-                }
+            while let Ok(amt) = data.socket.write(&buf) {
+                data.amt += amt;
                 if data.amt >= N {
                     data.shutdown = true;
                     break;
@@ -571,7 +559,11 @@ fn connect_error() {
 
         for event in &events {
             if event.token() == Token(0) {
-                assert!(event.is_writable());
+                // With fastopen we would be able to write
+                // Without fastopen we would be getting the connection error
+                assert!(event.is_writable() || event.is_error());
+                // Solaris poll(2) says POLLHUP and POLLOUT are mutually exclusive.
+                #[cfg(not(target_os = "solaris"))]
                 assert!(event.is_write_closed());
                 break 'outer;
             }
@@ -620,6 +612,7 @@ fn write_error() {
     let buf = [0; 1024];
     loop {
         match s.write(&buf) {
+            Ok(0) => panic!("unexpected end"),
             Ok(_) => {}
             Err(ref e) if e.kind() == io::ErrorKind::WouldBlock => wait_writable(),
             Err(e) => {
@@ -698,7 +691,16 @@ fn write_shutdown() {
     // Now, shutdown the write half of the socket.
     socket.shutdown(Shutdown::Write).unwrap();
 
-    wait!(poll, is_readable, true);
+    // POLLRDHUP isn't supported on Solaris,
+    if cfg!(any(
+        target_os = "hurd",
+        target_os = "solaris",
+        target_os = "nto"
+    )) {
+        wait!(poll, is_readable, false);
+    } else {
+        wait!(poll, is_readable, true);
+    }
 }
 
 struct MyHandler {

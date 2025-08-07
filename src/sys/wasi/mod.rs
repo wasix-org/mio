@@ -16,29 +16,12 @@
 #[allow(unused)]
 use std::io;
 
-#[cfg(all(feature = "net", target_vendor = "unknown"))]
-use crate::{Interest, Token};
-
-#[cfg(target_vendor = "unknown")]
-cfg_net! {
-    pub(crate) mod tcp {
-        use std::io;
-        use std::net::{self, SocketAddr};
-
-        pub(crate) fn accept(listener: &net::TcpListener) -> io::Result<(net::TcpStream, SocketAddr)> {
-            let (stream, addr) = listener.accept()?;
-            stream.set_nonblocking(true)?;
-            Ok((stream, addr))
-        }
-    }
-}
-
 #[cfg(target_vendor = "wasmer")]
 cfg_os_poll! {
     pub(crate) mod sourcefd;
     #[allow(unused)]
     pub use self::sourcefd::SourceFd;
-    
+
     pub(crate) mod waker;
     pub(crate) use self::waker::Waker;
 
@@ -54,6 +37,23 @@ cfg_os_poll! {
         pub(crate) mod tcp;
         pub(crate) mod udp;
         pub(crate) mod pipe;
+    }
+}
+
+#[cfg(all(feature = "net", target_vendor = "unknown"))]
+use crate::{Interest, Token};
+
+#[cfg(target_vendor = "unknown")]
+cfg_net! {
+    pub(crate) mod tcp {
+        use std::io;
+        use std::net::{self, SocketAddr};
+
+        pub(crate) fn accept(listener: &net::TcpListener) -> io::Result<(net::TcpStream, SocketAddr)> {
+            let (stream, addr) = listener.accept()?;
+            stream.set_nonblocking(true)?;
+            Ok((stream, addr))
+        }
     }
 }
 

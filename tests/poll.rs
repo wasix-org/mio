@@ -126,11 +126,14 @@ fn drop_cancels_interest_and_shuts_down() {
 
     let handle = thread::spawn(move || {
         let mut stream = listener.incoming().next().unwrap().unwrap();
+        // SO_RCVTIMEO not supported on GNU/Hurd
+        #[cfg(not(target_os = "hurd"))]
         stream
             .set_read_timeout(Some(Duration::from_secs(5)))
             .expect("set_read_timeout");
         match stream.read(&mut [0; 16]) {
-            Ok(_) => (),
+            Ok(0) => (),
+            Ok(n) => panic!("unexpected read of {n} bytes"),
             Err(err) => {
                 if err.kind() != io::ErrorKind::UnexpectedEof {
                     panic!("{}", err);
@@ -581,7 +584,7 @@ fn poll_registration() {
     let interests = Interest::READABLE;
     registry.register(&mut source, token, interests).unwrap();
     assert_eq!(source.registrations.len(), 1);
-    assert_eq!(source.registrations.get(0), Some(&(token, interests)));
+    assert_eq!(source.registrations.first(), Some(&(token, interests)));
     assert!(source.reregistrations.is_empty());
     assert_eq!(source.deregister_count, 0);
 
@@ -593,7 +596,7 @@ fn poll_registration() {
     assert_eq!(source.registrations.len(), 1);
     assert_eq!(source.reregistrations.len(), 1);
     assert_eq!(
-        source.reregistrations.get(0),
+        source.reregistrations.first(),
         Some(&(re_token, re_interests))
     );
     assert_eq!(source.deregister_count, 0);

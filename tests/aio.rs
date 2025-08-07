@@ -4,14 +4,13 @@
 ))]
 #![cfg(all(feature = "os-poll", feature = "net"))]
 
-use mio::{event::Source, Events, Interest, Poll, Registry, Token};
-use std::{
-    fs::File,
-    io, mem,
-    os::unix::io::{AsRawFd, RawFd},
-    pin::Pin,
-    ptr,
-};
+use std::fs::File;
+use std::os::fd::{AsRawFd, RawFd};
+use std::pin::Pin;
+use std::{io, mem, ptr};
+
+use mio::event::Source;
+use mio::{Events, Interest, Poll, Registry, Token};
 
 mod util;
 use util::{expect_events, expect_no_events, init, temp_file, ExpectEvent};
@@ -28,7 +27,7 @@ impl Aiocb {
     /// The resulting `Aiocb` structure is suitable for use with `aio_fsync`
     pub fn from_fd(fd: RawFd) -> Aiocb {
         // Use mem::zeroed instead of explicitly zeroing each field, because the
-        // number and name of reserved fields is OS-dependent.  On some OSes,
+        // number and name of reserved fields is OS-dependent.  On some OSs,
         // some reserved fields are used the kernel for state, and must be
         // explicitly zeroed when allocated.
         let mut inner = unsafe { mem::zeroed::<libc::aiocb>() };

@@ -1,10 +1,11 @@
 [package]
-edition = "2018"
+edition = "2021"
+rust-version = "1.70"
 name = "mio"
 # When releasing to crates.io:
 # - Update CHANGELOG.md.
 # - Create git tag
-version       = "0.8.9"
+version       = "1.0.3"
 license       = "MIT"
 authors       = [
   "Carl Lerche <me@carllerche.com>",
@@ -46,11 +47,17 @@ net = []
 log = { version = "0.4.8", optional = true }
 
 [target.'cfg(unix)'.dependencies]
-libc = { git = "https://github.com/wasix-org/libc.git", branch = "v0.2.152" }
+libc = { git = "https://github.com/wasix-org/libc.git", branch = "wasix-0.2.169" }
+
+[target.'cfg(target_os = "hermit")'.dependencies]
+libc = { git = "https://github.com/wasix-org/libc.git", branch = "wasix-0.2.169" }
 
 [target.'cfg(windows)'.dependencies.windows-sys]
-version = "0.48"
+version = "0.52"
 features = [
+  "Wdk_Foundation",                   # Required for AFD.
+  "Wdk_Storage_FileSystem",           # Required for AFD.
+  "Wdk_System_IO",                    # Required for AFD.
   "Win32_Foundation",                 # Basic types eg HANDLE
   "Win32_Networking_WinSock",         # winsock2 types/functions
   "Win32_Storage_FileSystem",         # Enables NtCreateFile
@@ -65,7 +72,8 @@ wasi = { version = "^0.11" }
 wasix = { version = "0.12" }
 
 [target.'cfg(target_os = "wasi")'.dependencies]
-libc = { git = "https://github.com/wasix-org/libc.git", branch = "v0.2.152" }
+libc = { git = "https://github.com/wasix-org/libc.git", branch = "wasix-0.2.169" }
+wasi = "0.11.0"
 
 [dev-dependencies]
 env_logger = { version = "0.9.3", default-features = false }
@@ -79,6 +87,7 @@ targets = [
   "aarch64-linux-android",
   "wasm32-wasi",
   "x86_64-apple-darwin",
+  "x86_64-pc-windows-gnu",
   "x86_64-pc-windows-msvc",
   "x86_64-unknown-dragonfly",
   "x86_64-unknown-freebsd",
@@ -86,6 +95,7 @@ targets = [
   "x86_64-unknown-linux-gnu",
   "x86_64-unknown-netbsd",
   "x86_64-unknown-openbsd",
+  "x86_64-unknown-hermit",
 ]
 
 [package.metadata.playground]
@@ -102,3 +112,6 @@ required-features = ["os-poll", "net"]
 [[example]]
 name = "udp_server"
 required-features = ["os-poll", "net"]
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(mio_unsupported_force_poll_poll)', 'cfg(mio_unsupported_force_waker_pipe)'] }

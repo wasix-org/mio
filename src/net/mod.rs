@@ -36,6 +36,4 @@ pub use self::udp::UdpSocket;
 #[cfg(unix)]
 mod uds;
 #[cfg(unix)]
-pub use self::uds::{SocketAddr, UnixDatagram, UnixListener, UnixStream};
-#[cfg(any(target_vendor = "wasmer"))]
-pub use std::net::SocketAddr;
+pub use self::uds::{UnixDatagram, UnixListener, UnixStream};

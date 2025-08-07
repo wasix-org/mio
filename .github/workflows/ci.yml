@@ -1,9 +1,9 @@
 name: CI
 on:
   push:
-    branches: [ "master", "v0.7.x" ]
+    branches: [ "master", "v0.7.x", "v0.8.x" ]
   pull_request:
-    branches: [ "master", "v0.7.x" ]
+    branches: [ "master", "v0.7.x", "v0.8.x" ]
 env:
   CARGO_TERM_COLOR: always
   RUST_BACKTRACE: full
@@ -21,7 +21,7 @@ jobs:
       matrix:
         os: ["ubuntu-latest", "macos-latest", "windows-latest"]
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - uses: dtolnay/rust-toolchain@stable
     - name: Install Cargo-hack
       run: cargo install --debug cargo-hack
@@ -37,7 +37,7 @@ jobs:
     env:
       RUSTFLAGS: "--cfg mio_unsupported_force_poll_poll"
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - uses: dtolnay/rust-toolchain@stable
     - name: Tests
       run: cargo test --all-features
@@ -49,7 +49,7 @@ jobs:
     env:
       RUSTFLAGS: "--cfg mio_unsupported_force_waker_pipe"
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - uses: dtolnay/rust-toolchain@stable
     - name: Tests
       run: cargo test --all-features
@@ -63,7 +63,7 @@ jobs:
       matrix:
         os: ["ubuntu-latest", "macos-latest", "windows-latest"]
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - uses: dtolnay/rust-toolchain@nightly
     - name: Install minimal verions
       run: cargo update -Zminimal-versions
@@ -75,27 +75,22 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: ["ubuntu-latest", "windows-latest"]
-        # TODO: once we update our MSRV above 1.53 add macOS again. Currently
-        # macOS, specifically Xcode 14, broke support for rustc < 1.53. See
-        # https://github.com/rust-lang/rust/issues/105167.
+        os: ["ubuntu-latest", "macos-latest", "windows-latest"]
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - uses: dtolnay/rust-toolchain@master
       with:
-        # NOTE: When updating also update Clippy flags, some are disabled due to
-        # MSRV.
-        toolchain: 1.46.0
+        # NOTE: full version (including .0) to work around
+        # <https://github.com/dtolnay/rust-toolchain/issues/112>.
+        toolchain: 1.70.0
     - name: Check
       # We only run check allowing us to use newer features in tests.
-      # We enable all features except for the `log` feature as since log v0.4.19
-      # it requires a MSRV later then rustc 1.46.
-      run: cargo check --no-default-features --features os-poll,os-ext,net
+      run: cargo check --all-features
   Nightly:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - uses: dtolnay/rust-toolchain@nightly
     - name: Tests
       run: cargo test --all-features
@@ -103,18 +98,17 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - uses: dtolnay/rust-toolchain@stable
       with:
         components: clippy
     - name: Clippy
-      # NOTE: `clippy::uninlined-format-args` is enabled due to MSRV.
-      run: cargo clippy --all-targets --all-features -- -D warnings -A clippy::cognitive-complexity -A clippy::uninlined-format-args
+      run: cargo clippy --all-targets --all-features -- --allow clippy::mixed-attributes-style --allow clippy::unused-io-amount --allow clippy::needless-lifetimes -D warnings
   Docs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - uses: dtolnay/rust-toolchain@stable
     - name: Check docs
       run: RUSTDOCFLAGS="-D warnings" cargo doc --no-deps --all-features
@@ -122,7 +116,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - uses: dtolnay/rust-toolchain@stable
       with:
         components: rustfmt
@@ -134,27 +128,58 @@ jobs:
   CheckTargets:
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    steps:
-    - uses: actions/checkout@v3
-    - uses: dtolnay/rust-toolchain@stable
-      with:
-        components: clippy
-    - name: Install all targets
-      run: make install_targets
-    - name: Install Cargo-hack
-      run: cargo install --debug cargo-hack
-    - name: Check all targets
-      run: make check_all_targets
-  CheckTier3Targets:
-    name: Check
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
     strategy:
       fail-fast: false
       matrix:
-        target: ["armv7-sony-vita-newlibeabihf"]
+        target:
+          - aarch64-apple-darwin
+          - aarch64-apple-ios
+          - aarch64-apple-tvos
+          # Can't build standard library.
+          #- aarch64-apple-visionos
+          - aarch64-apple-watchos
+          - aarch64-linux-android
+          - aarch64-unknown-freebsd
+          - aarch64-unknown-fuchsia
+          - aarch64-unknown-hermit
+          - aarch64-unknown-linux-gnu
+          - aarch64-unknown-linux-musl
+          - aarch64-unknown-netbsd
+          - aarch64-unknown-nto-qnx710
+          - aarch64-unknown-openbsd
+          - aarch64-unknown-redox
+          - arm-linux-androideabi
+          - arm64_32-apple-watchos
+          - armv7-sony-vita-newlibeabihf
+          - i686-unknown-linux-gnu
+          # TODO: reenable <https://github.com/tokio-rs/mio/issues/1844>.
+          #- i686-unknown-hurd-gnu
+          # - powerpc64-ibm-aix Enable CI runs once aix has full stdlib upstreamed
+          - riscv32imc-esp-espidf
+          - sparcv9-sun-solaris
+          - wasm32-wasip1
+          - x86_64-apple-darwin
+          - x86_64-apple-ios
+          - x86_64-pc-nto-qnx710
+          - x86_64-pc-solaris
+          # TODO: solve the following err:
+          # `Error calling dlltool 'x86_64-w64-mingw32-dlltool'`, build log:
+          # <https://github.com/tokio-rs/mio/actions/runs/9436499623/job/25991326487?pr=1794>.
+          #- x86_64-pc-windows-gnu
+          - x86_64-pc-windows-msvc
+          - x86_64-unknown-dragonfly
+          - x86_64-unknown-freebsd
+          - x86_64-unknown-fuchsia
+          - x86_64-unknown-haiku
+          - x86_64-unknown-hermit
+          - x86_64-unknown-illumos
+          - x86_64-unknown-linux-gnu
+          - x86_64-unknown-linux-musl
+          - x86_64-unknown-netbsd
+          - x86_64-unknown-openbsd
+          - x86_64-unknown-redox
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - uses: dtolnay/rust-toolchain@nightly
       with:
         components: rust-src
@@ -169,7 +194,7 @@ jobs:
       matrix:
         sanitizer: [address, leak, memory, thread]
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - uses: dtolnay/rust-toolchain@nightly
     - name: Add rust source
       run: rustup component add rust-src
@@ -188,6 +213,5 @@ jobs:
       - Docs
       - Rustfmt
       - CheckTargets
-      - CheckTier3Targets
     steps:
       - run: exit 0
