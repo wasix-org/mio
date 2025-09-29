@@ -73,6 +73,7 @@ pub use interest::Interest;
 pub use poll::{Poll, Registry};
 pub use token::Token;
 
+#[allow(unused_imports)]
 mod wasi {
     #[cfg(all(target_os = "wasi", target_vendor = "unknown"))]
     pub use ::wasi::*;
