@@ -16,6 +16,9 @@ mod eventfd {
         fd: File,
     }
 
+    #[repr(align(8))]
+    struct AlignedU64Bytes([u8; 8]);
+
     impl Waker {
         pub fn new(selector: &Selector, token: Token) -> io::Result<Waker> {
             let fd = unsafe {
@@ -27,7 +30,7 @@ mod eventfd {
                 wasi::fd_fdstat_get(fd)
                     .map_err(|errno| io::Error::from_raw_os_error(errno.raw() as i32))?
             };
-        
+
             let mut flags = fdstat.fs_flags;
             flags |= wasi::FDFLAGS_NONBLOCK;
             unsafe {
@@ -42,8 +45,8 @@ mod eventfd {
         }
 
         pub fn wake(&self) -> io::Result<()> {
-            let buf: [u8; 8] = 1u64.to_ne_bytes();
-            match (&self.fd).write(&buf) {
+            let buf = AlignedU64Bytes(1u64.to_ne_bytes());
+            match (&self.fd).write(&buf.0) {
                 Ok(_) => Ok(()),
                 Err(ref err) if err.kind() == io::ErrorKind::WouldBlock => {
                     // Writing only blocks if the counter is going to overflow.
@@ -57,8 +60,8 @@ mod eventfd {
 
         /// Reset the eventfd object, only need to call this if `wake` fails.
         fn reset(&self) -> io::Result<()> {
-            let mut buf: [u8; 8] = 0u64.to_ne_bytes();
-            match (&self.fd).read(&mut buf) {
+            let mut buf = AlignedU64Bytes(0u64.to_ne_bytes());
+            match (&self.fd).read(&mut buf.0) {
                 Ok(_) => Ok(()),
                 // If the `Waker` hasn't been awoken yet this will return a
                 // `WouldBlock` error which we can safely ignore.
