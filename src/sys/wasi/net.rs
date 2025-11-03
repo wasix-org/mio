@@ -121,7 +121,11 @@ pub(crate) fn socket_addr(addr: &SocketAddr) -> wasi::AddrPort {
                             h1: s[5],
                             h2: s[6],
                             h3: s[7],
-                        }
+                            flow_info0: 0,
+                            flow_info1: 0,
+                            scope_id0: 0,
+                            scope_id1: 0,
+                        },
                     }
                 }
             }

@@ -69,7 +69,7 @@ features = [
 wasi = { version = "^0.11" }
 
 [target.'cfg(all(target_os = "wasi", target_vendor = "wasmer"))'.dependencies]
-wasix = { version = "0.12" }
+wasix = { version = "0.13" }
 
 [target.'cfg(target_os = "wasi")'.dependencies]
 libc = { git = "https://github.com/wasix-org/libc.git", branch = "wasix-0.2.169" }
