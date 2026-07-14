@@ -77,6 +77,7 @@ mod wasi {
     #[cfg(all(target_os = "wasi", target_vendor = "unknown"))]
     pub use ::wasi::*;
     #[cfg(all(target_os = "wasi", target_vendor = "wasmer"))]
+    #[allow(unused_imports)]
     pub use ::wasix::*;
 }
 

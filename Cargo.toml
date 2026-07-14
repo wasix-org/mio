@@ -4,7 +4,7 @@ name = "mio"
 # When releasing to crates.io:
 # - Update CHANGELOG.md.
 # - Create git tag
-version       = "0.8.4"
+version       = "0.8.4+wasix.1"
 license       = "MIT"
 authors       = [
   "Carl Lerche <me@carllerche.com>",
@@ -43,7 +43,7 @@ os-ext = [
 net = []
 
 [target.'cfg(unix)'.dependencies]
-libc = { git = "https://github.com/wasix-org/libc.git" }
+libc = "0.2.151"
 
 [target.'cfg(windows)'.dependencies.windows-sys]
 version = "0.36"
@@ -62,7 +62,7 @@ wasi = { version = "^0.11" }
 wasix = { version = "0.12" }
 
 [target.'cfg(target_os = "wasi")'.dependencies]
-libc = { git = "https://github.com/wasix-org/libc.git" }
+libc = "0.2.151"
 
 [dependencies]
 log = "0.4"
