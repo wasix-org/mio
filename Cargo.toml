@@ -6,7 +6,7 @@ name = "mio"
 # - Update CHANGELOG.md.
 # - Update doc URL.
 # - Create git tag
-version       = "0.7.14+wasix.1"
+version       = "0.7.14+wasix.2"
 license       = "MIT"
 authors       = [
   "Carl Lerche <me@carllerche.com>",
