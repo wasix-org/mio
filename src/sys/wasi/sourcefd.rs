@@ -4,6 +4,7 @@ use std::io;
 use std::os::wasi::io::RawFd;
 
 #[derive(Debug)]
+#[allow(dead_code)]
 pub struct SourceFd<'a>(pub &'a RawFd);
 
 impl<'a> event::Source for SourceFd<'a> {

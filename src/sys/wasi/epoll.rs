@@ -1,6 +1,5 @@
 use crate::{Interest, Token};
 
-use log::error;
 #[cfg(debug_assertions)]
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::time::Duration;
